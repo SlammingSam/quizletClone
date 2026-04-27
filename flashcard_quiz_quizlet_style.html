@@ -18,8 +18,86 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { background: var(--color-background-primary); color: var(--color-text-primary); font-family: var(--font-sans); }
 #app { font-family: var(--font-sans); padding: 1.25rem 1rem; max-width: 680px; margin: 0 auto; }
-#setup-screen, #quiz-screen, #done-screen { display: none; }
-#setup-screen.active, #quiz-screen.active, #done-screen.active { display: block; }
+#setup-screen, #quiz-screen, #flip-screen, #done-screen { display: none; }
+#setup-screen.active, #quiz-screen.active, #flip-screen.active, #done-screen.active { display: block; }
+
+/* Flip Card Styles */
+.flip-container {
+  perspective: 1000px;
+  margin-bottom: 2rem;
+  cursor: pointer;
+}
+.flip-card {
+  position: relative;
+  width: 100%;
+  height: 300px;
+  text-align: center;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+}
+.flip-card.is-flipped {
+  transform: rotateY(180deg);
+}
+.flip-front, .flip-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: var(--color-background-primary);
+  border: 1px solid var(--color-border-tertiary);
+  border-radius: var(--border-radius-lg);
+  font-size: 24px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  text-align: center;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+.flip-back {
+  transform: rotateY(180deg);
+  background: var(--color-background-secondary);
+}
+
+/* Toggle Switch */
+.switch-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 1.5rem;
+  user-select: none;
+  cursor: pointer;
+}
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+}
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: var(--color-border-secondary);
+  transition: .4s;
+  border-radius: 34px;
+}
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px; width: 16px;
+  left: 3px; bottom: 3px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+input:checked + .slider { background-color: var(--color-accent); }
+input:checked + .slider:before { transform: translateX(18px); }
 
 .set-title-input {
   width: 100%; font-size: 20px; font-weight: 500;
@@ -184,6 +262,14 @@ h2 { font-size: 18px; font-weight: 500; color: var(--color-text-primary); }
 
     <input class="set-title-input" id="set-title" type="text" placeholder="Enter a title, like &quot;Biology Ch. 12&quot;" oninput="saveToLocalStorage()" />
 
+    <label class="switch-wrap">
+      <div class="switch">
+        <input type="checkbox" id="swap-toggle" onchange="saveToLocalStorage()">
+        <span class="slider"></span>
+      </div>
+      <span style="font-size:14px;color:var(--color-text-secondary);">Swap Term & Definition</span>
+    </label>
+
     <div style="margin-bottom:1.5rem;">
       <label style="font-size:14px;color:var(--color-text-secondary);display:block;margin-bottom:6px;">Bulk import (optional)</label>
       <textarea id="bulk-input" placeholder="Paste cards here, one per line: Question&#9;Answer" style="width:100%;height:120px;padding:12px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);font-size:14px;font-family:var(--font-sans);resize:vertical;outline:none;"></textarea>
@@ -201,10 +287,33 @@ h2 { font-size: 18px; font-weight: 500; color: var(--color-text-primary); }
     </div>
 
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-      <button class="btn-primary" onclick="startQuiz()">Start studying</button>
+      <button class="btn-primary" onclick="startQuiz()">Multiple choice</button>
+      <button class="btn-primary" style="background:var(--color-accent-tertiary);" onclick="startFlipMode()">Flashcards</button>
       <button class="btn-ghost" onclick="loadSample()">Load sample set</button>
     </div>
     <p id="setup-err" style="font-size:13px;color:#c62828;margin-top:10px;display:none;">Add at least 4 cards (each needs a term and definition) to start.</p>
+  </div>
+
+  <!-- ── FLIP MODE ── -->
+  <div id="flip-screen">
+    <div class="top-bar">
+      <span id="f-counter" style="font-size:13px;color:var(--color-text-secondary);"></span>
+      <button class="btn-ghost" style="padding:7px 14px;font-size:12px;" onclick="goSetup()">End session</button>
+    </div>
+    <div class="progress-wrap"><div class="progress-fill" id="f-prog" style="width:0%"></div></div>
+
+    <div class="flip-container" onclick="toggleFlip()">
+      <div class="flip-card" id="flip-card">
+        <div class="flip-front" id="f-front"></div>
+        <div class="flip-back" id="f-back"></div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:center;gap:12px;">
+      <button class="btn-ghost" id="f-prev" onclick="prevFlip()">← Previous</button>
+      <button class="btn-primary" id="f-next" onclick="nextFlip()">Next →</button>
+    </div>
+    <p style="text-align:center;font-size:12px;color:var(--color-text-tertiary);margin-top:1.5rem;">Click the card to flip</p>
   </div>
 
   <!-- ── QUIZ ── -->
@@ -259,6 +368,7 @@ let cards = [], chunks = [], currentChunk = 0, queue = [], reviewQueue = [];
 let current = null, answered = false;
 let totalCorrect = 0, totalWrong = 0, sessionAnswered = 0;
 let chunkMax = 0, chunkQuestion = 0;
+let flipIndex = 0;
 
 const SAMPLE = [
   { t: 'Mitochondria', d: 'The powerhouse of the cell; produces ATP via cellular respiration' },
@@ -307,13 +417,18 @@ function updateCard(i, field, val) {
 
 function saveToLocalStorage() {
   const title = document.getElementById('set-title').value;
+  const swap = document.getElementById('swap-toggle').checked;
   localStorage.setItem('quizlet_clone_title', title);
+  localStorage.setItem('quizlet_clone_swap', swap);
   localStorage.setItem('quizlet_clone_cards', JSON.stringify(cardData));
 }
 
 function loadFromLocalStorage() {
   const savedTitle = localStorage.getItem('quizlet_clone_title');
   if (savedTitle !== null) document.getElementById('set-title').value = savedTitle;
+
+  const savedSwap = localStorage.getItem('quizlet_clone_swap');
+  if (savedSwap !== null) document.getElementById('swap-toggle').checked = savedSwap === 'true';
   
   const savedCards = localStorage.getItem('quizlet_clone_cards');
   if (savedCards) {
@@ -398,6 +513,53 @@ function shuffle(arr) {
   return a;
 }
 
+function startFlipMode() {
+  const valid = cardData.filter(c => c.t.trim() && c.d.trim());
+  const err = document.getElementById('setup-err');
+  if (valid.length < 1) { err.style.display = 'block'; return; }
+  err.style.display = 'none';
+  cards = shuffle(valid);
+  flipIndex = 0;
+  showScreen('flip-screen');
+  showFlipCard();
+}
+
+function showFlipCard() {
+  const c = cards[flipIndex];
+  const swap = document.getElementById('swap-toggle').checked;
+  const frontText = swap ? c.d : c.t;
+  const backText = swap ? c.t : c.d;
+
+  document.getElementById('flip-card').classList.remove('is-flipped');
+  document.getElementById('f-front').textContent = frontText;
+  document.getElementById('f-back').textContent = backText;
+  document.getElementById('f-counter').textContent = `Card ${flipIndex + 1} of ${cards.length}`;
+  document.getElementById('f-prog').style.width = `${((flipIndex + 1) / cards.length) * 100}%`;
+  
+  document.getElementById('f-prev').disabled = flipIndex === 0;
+  document.getElementById('f-next').textContent = flipIndex === cards.length - 1 ? 'Finish' : 'Next →';
+}
+
+function toggleFlip() {
+  document.getElementById('flip-card').classList.toggle('is-flipped');
+}
+
+function nextFlip() {
+  if (flipIndex < cards.length - 1) {
+    flipIndex++;
+    showFlipCard();
+  } else {
+    goSetup();
+  }
+}
+
+function prevFlip() {
+  if (flipIndex > 0) {
+    flipIndex--;
+    showFlipCard();
+  }
+}
+
 function startQuiz() {
   const valid = cardData.filter(c => c.t.trim() && c.d.trim());
   const err = document.getElementById('setup-err');
@@ -419,7 +581,7 @@ function startQuiz() {
 }
 
 function showScreen(id) {
-  ['setup-screen','quiz-screen','done-screen'].forEach(s =>
+  ['setup-screen','quiz-screen','flip-screen','done-screen'].forEach(s =>
     document.getElementById(s).classList.toggle('active', s === id));
 }
 
@@ -461,13 +623,17 @@ function showQuestion() {
 
   document.getElementById('round-msg').style.display = reviewQueue.length > 0 ? 'block' : 'none';
 
-  document.getElementById('q-text').textContent = current.t;
+  const swap = document.getElementById('swap-toggle').checked;
+  const questionText = swap ? current.d : current.t;
+  const answerText = swap ? current.t : current.d;
+
+  document.getElementById('q-text').textContent = questionText;
   document.getElementById('feedback').className = 'feedback-bar';
   document.getElementById('next-btn').style.display = 'none';
 
   const wrongPool = cards.filter(c => c.d !== current.d);
-  const wrongs = shuffle(wrongPool).slice(0, 3).map(c => c.d);
-  const choices = shuffle([current.d, ...wrongs]);
+  const wrongs = shuffle(wrongPool).slice(0, 3).map(c => swap ? c.t : c.d);
+  const choices = shuffle([answerText, ...wrongs]);
 
   const choicesEl = document.getElementById('choices');
   choicesEl.innerHTML = '';
@@ -484,11 +650,13 @@ function pick(btn, choice) {
   if (answered) return;
   answered = true;
   sessionAnswered++;
-  const isCorrect = choice === current.d;
+  const swap = document.getElementById('swap-toggle').checked;
+  const answerText = swap ? current.t : current.d;
+  const isCorrect = choice === answerText;
 
   document.querySelectorAll('.choice-btn').forEach(b => {
     b.disabled = true;
-    if (b.querySelector('.choice-text').textContent === current.d) b.classList.add('reveal');
+    if (b.querySelector('.choice-text').textContent === answerText) b.classList.add('reveal');
   });
 
   if (isCorrect) {
@@ -504,7 +672,7 @@ function pick(btn, choice) {
     reviewQueue.push(current);
     const fb = document.getElementById('feedback');
     fb.className = 'feedback-bar wrong';
-    fb.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" style="flex-shrink:0"><line x1="4" y1="4" x2="12" y2="12" stroke="#c62828" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="4" x2="4" y2="12" stroke="#c62828" stroke-width="2" stroke-linecap="round"/></svg> The correct answer is: <strong style="margin-left:4px;">${current.d}</strong>`;
+    fb.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" style="flex-shrink:0"><line x1="4" y1="4" x2="12" y2="12" stroke="#c62828" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="4" x2="4" y2="12" stroke="#c62828" stroke-width="2" stroke-linecap="round"/></svg> The correct answer is: <strong style="margin-left:4px;">${answerText}</strong>`;
   }
 
   document.getElementById('next-btn').style.display = 'inline-block';
