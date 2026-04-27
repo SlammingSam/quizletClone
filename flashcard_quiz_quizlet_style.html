@@ -206,10 +206,18 @@ input:checked + .slider:before { transform: translateX(18px); }
   border-radius: var(--border-radius-md);
   font-size: 14px; color: var(--color-text-primary);
   cursor: pointer; margin-bottom: 10px;
-  transition: background 0.1s, border-color 0.1s;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
   line-height: 1.45;
 }
-.choice-btn:hover:not(:disabled) { background: #eef0ff; border-color: #4255ff; }
+.choice-btn:hover:not(:disabled) {
+  background: #eef0ff;
+  border-color: #4255ff;
+  color: #102a43;
+}
+.choice-btn:hover:not(:disabled) .choice-letter {
+  border-color: #4255ff;
+  color: #102a43;
+}
 .choice-btn:disabled { cursor: default; }
 .choice-letter {
   display: inline-flex; align-items: center; justify-content: center;
