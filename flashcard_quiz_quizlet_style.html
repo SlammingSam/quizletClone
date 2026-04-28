@@ -205,8 +205,6 @@ let current = null, answered = false;
 let totalCorrect = 0, totalWrong = 0, sessionAnswered = 0;
 let chunkMax = 0, chunkQuestion = 0;
 let flipIndex = 0;
-
-// Weighted randomization: tracks how often each card has been seen/missed
 let cardWeights = {};
 
 const SAMPLE = [
@@ -218,75 +216,75 @@ const SAMPLE = [
   { t: 'Ribosome', d: 'Organelle responsible for protein synthesis, reading mRNA to assemble amino acids' },
 ];
 
+// Normalize a string for deduplication comparison:
+// lowercase, strip leading articles (a/an/the), collapse whitespace, strip punctuation
+function normalize(str) {
+  return str
+    .toLowerCase()
+    .trim()
+    .replace(/^(the|a|an)\s+/i, '')
+    .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 // ── Distractor scoring ───────────────────────────────────────────────────────
-// Returns a similarity score (higher = more confusable) between candidate and target answer
 function distractorScore(candidate, target) {
   const c = candidate.toLowerCase().trim();
   const t = target.toLowerCase().trim();
   let score = 0;
-
-  // Same first letter → strong signal (names, terminology)
   if (c[0] === t[0]) score += 30;
-
-  // Same first word → very strong signal
   const cWords = c.split(/\s+/);
   const tWords = t.split(/\s+/);
   if (cWords[0] === tWords[0]) score += 25;
-
-  // Word count proximity (same count = names/phrases of same length)
   const wordDiff = Math.abs(cWords.length - tWords.length);
   score += Math.max(0, 20 - wordDiff * 7);
-
-  // Character length proximity
   const lenDiff = Math.abs(c.length - t.length);
   score += Math.max(0, 15 - lenDiff * 1.5);
-
-  // Shared words (excluding stop words)
   const stops = new Set(['the','a','an','of','in','is','are','to','and','or','for','that','this','with','by','on','at','from','as','its','it','be','was','were','has','have']);
   const tSet = new Set(tWords.filter(w => !stops.has(w) && w.length > 2));
   const shared = cWords.filter(w => !stops.has(w) && w.length > 2 && tSet.has(w)).length;
   score += shared * 10;
-
-  // Exact match → disqualify (should never happen but safety check)
   if (c === t) score = -999;
-
   return score;
 }
 
-// Pick 3 distractors: blend top-scoring (most confusable) with random
+// Pick 3 distractors, deduplicating against the correct answer and each other
 function pickDistractors(correctAnswer, pool, answerKey) {
-  const candidates = pool
-    .filter(c => (answerKey === 'd' ? c.d : c.t) !== correctAnswer)
-    .map(c => {
-      const text = answerKey === 'd' ? c.d : c.t;
-      return { text, score: distractorScore(text, correctAnswer) };
-    })
-    .filter(x => x.text.trim());
+  const correctNorm = normalize(correctAnswer);
 
-  // Sort by score descending for top-scorers
-  const sorted = [...candidates].sort((a, b) => b.score - a.score);
+  // Build candidate list, deduplicating against the correct answer and prior candidates
+  const seenNorms = new Set([correctNorm]);
+  const candidates = [];
 
-  // Take 2 from the top-scoring pool and 1 random from the rest (to keep variety)
-  const topPool = sorted.slice(0, Math.min(4, sorted.length));
-  const restPool = sorted.slice(4);
+  pool.forEach(c => {
+    const text = (answerKey === 'd' ? c.d : c.t).trim();
+    if (!text) return;
+    const norm = normalize(text);
+    if (seenNorms.has(norm)) return; // duplicate of correct answer or a prior candidate
+    seenNorms.add(norm);
+    candidates.push({ text, score: distractorScore(text, correctAnswer) });
+  });
+
+  // Sort by score descending
+  candidates.sort((a, b) => b.score - a.score);
+
+  const topPool = shuffle([...candidates.slice(0, Math.min(4, candidates.length))]);
+  const restPool = shuffle([...candidates.slice(4)]);
 
   const chosen = [];
-  const pick = (pool) => {
-    if (pool.length === 0) return null;
-    const idx = Math.floor(Math.random() * pool.length);
-    const item = pool.splice(idx, 1)[0];
-    return item;
+  const pickFrom = (arr) => {
+    if (!arr.length) return null;
+    return arr.shift();
   };
 
-  // Shuffle top pool to add variance (don't always pick the #1 hardest)
-  const topShuffled = shuffle([...topPool]);
-  const r1 = pick(topShuffled);
-  const r2 = pick(topShuffled);
-  const r3 = restPool.length > 0 ? pick(shuffle([...restPool])) : pick(topShuffled);
+  const r1 = pickFrom(topPool);
+  const r2 = pickFrom(topPool);
+  const r3 = restPool.length > 0 ? pickFrom(restPool) : pickFrom(topPool);
 
-  [r1, r2, r3].forEach(r => { if (r && !chosen.find(x => x.text === r.text)) chosen.push(r); });
+  [r1, r2, r3].forEach(r => { if (r) chosen.push(r); });
 
-  // Fill any gaps if not enough candidates
+  // Fill gaps if pool was small
   while (chosen.length < Math.min(3, candidates.length)) {
     const fallback = candidates.find(c => !chosen.find(x => x.text === c.text));
     if (fallback) chosen.push(fallback);
@@ -305,15 +303,11 @@ function initWeights(cardList) {
 }
 
 function weightedShuffle(arr) {
-  // Build a weighted pool: cards with higher weight appear more times
-  // Missed cards get weight boosted in pick(); unseen cards start at 1
   const pool = [];
   arr.forEach(c => {
     const w = Math.max(1, Math.round(cardWeights[getCardKey(c)] || 1));
     for (let i = 0; i < w; i++) pool.push(c);
   });
-
-  // Fisher-Yates on the pool, then deduplicate while preserving weighted order
   const shuffled = shuffle(pool);
   const seen = new Set();
   const result = [];
@@ -321,13 +315,10 @@ function weightedShuffle(arr) {
     const k = getCardKey(c);
     if (!seen.has(k)) { seen.add(k); result.push(c); }
   });
-
-  // Append any that got lost (shouldn't happen, safety net)
   arr.forEach(c => {
     const k = getCardKey(c);
     if (!seen.has(k)) result.push(c);
   });
-
   return result;
 }
 
@@ -505,9 +496,7 @@ function startQuiz() {
 function buildChunks() {
   chunks = [];
   const ordered = weightedShuffle(cards);
-  for (let i = 0; i < ordered.length; i += 10) {
-    chunks.push(ordered.slice(i, i + 10));
-  }
+  for (let i = 0; i < ordered.length; i += 10) chunks.push(ordered.slice(i, i + 10));
   currentChunk = 0;
   queue = [...chunks[0]];
   reviewQueue = [];
@@ -570,8 +559,8 @@ function showQuestion() {
   document.getElementById('feedback').className = 'feedback-bar';
   document.getElementById('next-btn').style.display = 'none';
 
-  // Smart distractors
-  const wrongPool = cards.filter(c => c[answerKey] !== answerText);
+  // Build distractor pool: exclude the current card, then deduplicate within pickDistractors
+  const wrongPool = cards.filter(c => c[answerKey] !== current[answerKey]);
   const wrongs = pickDistractors(answerText, wrongPool, answerKey);
   const choices = shuffle([answerText, ...wrongs]);
 
