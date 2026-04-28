@@ -101,6 +101,17 @@ input:checked + .slider:before { transform: translateX(18px); }
 .pill-review { font-size: 12px; padding: 3px 10px; border-radius: 99px; font-weight: 500; background: #fff3e0; color: #e65100; }
 .pill-mastered { font-size: 12px; padding: 3px 10px; border-radius: 99px; font-weight: 500; background: #e3f2fd; color: #1565c0; }
 h2 { font-size: 18px; font-weight: 500; color: var(--color-text-primary); }
+
+.pool-panel { background: var(--color-background-secondary); border-radius: var(--border-radius-lg); padding: 14px 16px; margin-bottom: 1.5rem; }
+.pool-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.pool-title { font-size: 14px; font-weight: 500; color: var(--color-text-primary); }
+.pool-badge { font-size: 13px; font-weight: 500; color: var(--color-accent); background: rgba(76,175,80,0.12); padding: 3px 10px; border-radius: 99px; }
+.pool-slider { width: 100%; margin: 4px 0 8px; accent-color: var(--color-accent); }
+.pool-ticks { display: flex; justify-content: space-between; margin-top: 4px; }
+.pool-tick { font-size: 11px; color: var(--color-text-tertiary); cursor: pointer; padding: 2px 4px; border-radius: 4px; transition: color 0.12s; }
+.pool-tick:hover { color: var(--color-text-primary); }
+.pool-tick.active { color: var(--color-accent); font-weight: 500; }
+.pool-note { font-size: 12px; color: var(--color-text-tertiary); margin-top: 6px; }
 </style>
 
 <div id="app">
@@ -122,6 +133,21 @@ h2 { font-size: 18px; font-weight: 500; color: var(--color-text-primary); }
       </div>
       <div class="mastery-bar-track"><div class="mastery-bar-fill" id="mastery-bar-fill" style="width:0%"></div></div>
       <div style="font-size:12px;color:var(--color-text-tertiary);">Cards answered correctly 3× in a row are marked mastered and skipped in new sessions.</div>
+    </div>
+
+    <div class="pool-panel" id="pool-panel">
+      <div class="pool-header">
+        <span class="pool-title">Pool size</span>
+        <span class="pool-badge" id="pool-badge">All cards</span>
+      </div>
+      <input type="range" class="pool-slider" id="pool-slider" min="0" max="3" step="1" value="0" oninput="updatePoolSlider()">
+      <div class="pool-ticks">
+        <span class="pool-tick active" onclick="setPoolTick(0)">All</span>
+        <span class="pool-tick" onclick="setPoolTick(1)">½</span>
+        <span class="pool-tick" onclick="setPoolTick(2)">⅓</span>
+        <span class="pool-tick" onclick="setPoolTick(3)">¼</span>
+      </div>
+      <p class="pool-note" id="pool-note">Testing on all available cards. Cards are picked randomly when a subset is chosen.</p>
     </div>
 
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:1.5rem;">
@@ -216,6 +242,7 @@ h2 { font-size: 18px; font-weight: 500; color: var(--color-text-primary); }
       <div class="stat-card"><div class="stat-num" id="s-pct">0%</div><div class="stat-lbl">Accuracy</div></div>
     </div>
     <div id="done-mastery-row" style="margin:0.5rem 0 1rem;text-align:center;font-size:13px;color:var(--color-text-secondary);"></div>
+    <div id="done-pool-row" style="margin:0 0 1rem;text-align:center;font-size:12px;color:var(--color-text-tertiary);"></div>
     <div style="display:flex;gap:10px;margin-top:1.25rem;flex-wrap:wrap;">
       <button class="btn-primary" onclick="restartSame()">Study again</button>
       <button class="btn-ghost" onclick="goSetup()">Edit cards</button>
@@ -234,14 +261,20 @@ let current = null, answered = false;
 let totalCorrect = 0, totalWrong = 0, sessionAnswered = 0;
 let chunkMax = 0, chunkQuestion = 0;
 let flipIndex = 0;
+let sessionPool = []; // the randomly-selected subset for this session
 
-// Persistent state: weights + mastery + streak per card
-// cardWeights: { key: number }  — higher = shown more
-// cardMastery: { key: bool }    — true = mastered
-// cardStreak:  { key: number }  — consecutive correct count this session
 let cardWeights = {};
 let cardMastery = {};
 let cardStreak  = {};
+
+const POOL_FRACTIONS = [1, 0.5, 1/3, 0.25];
+const POOL_LABELS = ['All cards', 'Half', 'One third', 'One quarter'];
+const POOL_NOTES = [
+  'Testing on all available cards. Cards are picked randomly when a subset is chosen.',
+  'Testing on a random half of your card pool.',
+  'Testing on a random third of your card pool.',
+  'Testing on a random quarter of your card pool.'
+];
 
 const SAMPLE = [
   { t: 'Mitochondria', d: 'The powerhouse of the cell; produces ATP via cellular respiration' },
@@ -252,7 +285,32 @@ const SAMPLE = [
   { t: 'Ribosome', d: 'Organelle responsible for protein synthesis, reading mRNA to assemble amino acids' },
 ];
 
-// ── Key helpers ──────────────────────────────────────────────────────────────
+function updatePoolSlider() {
+  const val = parseInt(document.getElementById('pool-slider').value);
+  const valid = cardData.filter(c => c.t.trim() && c.d.trim());
+  const count = Math.max(4, Math.ceil(valid.length * POOL_FRACTIONS[val]));
+  const actual = Math.min(count, valid.length);
+  document.getElementById('pool-badge').textContent =
+    val === 0 ? `All cards (${valid.length})` : `${actual} of ${valid.length} cards`;
+  document.getElementById('pool-note').textContent = POOL_NOTES[val];
+  document.querySelectorAll('.pool-tick').forEach((el, i) => {
+    el.classList.toggle('active', i === val);
+  });
+}
+
+function setPoolTick(val) {
+  document.getElementById('pool-slider').value = val;
+  updatePoolSlider();
+}
+
+function getPoolSubset(validCards) {
+  const val = parseInt(document.getElementById('pool-slider').value);
+  if (val === 0) return validCards;
+  const frac = POOL_FRACTIONS[val];
+  const count = Math.max(4, Math.ceil(validCards.length * frac));
+  return shuffle([...validCards]).slice(0, Math.min(count, validCards.length));
+}
+
 function getCardKey(card) { return card.t + '|||' + card.d; }
 
 function normalize(str) {
@@ -262,7 +320,6 @@ function normalize(str) {
     .replace(/\s+/g, ' ').trim();
 }
 
-// ── Persistent storage ───────────────────────────────────────────────────────
 function persistenceKey(suffix) { return LS_PREFIX + suffix; }
 
 function saveProgress() {
@@ -282,12 +339,11 @@ function loadProgress() {
 }
 
 function initWeights(cardList) {
-  // Only initialise keys that don't already exist — preserve persistent state
   cardList.forEach(c => {
     const k = getCardKey(c);
     if (cardWeights[k] === undefined) cardWeights[k] = 1;
     if (cardMastery[k] === undefined) cardMastery[k] = false;
-    cardStreak[k] = 0; // streak always resets each session
+    cardStreak[k] = 0;
   });
 }
 
@@ -315,8 +371,6 @@ function updateMasteryPanel() {
   document.getElementById('mastery-bar-fill').style.width = pct + '%';
 }
 
-// ── Record result & mastery logic ────────────────────────────────────────────
-// Returns true if the card just became newly mastered this answer
 function recordResult(card, correct) {
   const k = getCardKey(card);
   if (correct) {
@@ -325,18 +379,17 @@ function recordResult(card, correct) {
     if (!cardMastery[k] && cardStreak[k] >= MASTERY_THRESHOLD) {
       cardMastery[k] = true;
       saveProgress();
-      return true; // newly mastered
+      return true;
     }
   } else {
     cardWeights[k] = Math.min(5, (cardWeights[k] || 1) + 2);
     cardStreak[k] = 0;
-    cardMastery[k] = false; // wrong answer un-masters the card
+    cardMastery[k] = false;
   }
   saveProgress();
   return false;
 }
 
-// ── Distractor scoring ───────────────────────────────────────────────────────
 function distractorScore(candidate, target) {
   const c = candidate.toLowerCase().trim();
   const t = target.toLowerCase().trim();
@@ -379,7 +432,6 @@ function pickDistractors(correctAnswer, pool, answerKey) {
   return chosen.map(x => x.text);
 }
 
-// ── Weighted shuffle ─────────────────────────────────────────────────────────
 function weightedShuffle(arr) {
   const pool = [];
   arr.forEach(c => {
@@ -399,7 +451,6 @@ function shuffle(arr) {
   return a;
 }
 
-// ── Card editor ──────────────────────────────────────────────────────────────
 function autoResize(ta) { ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; }
 
 function renderCards() {
@@ -428,6 +479,7 @@ function renderCards() {
     list.appendChild(row);
     row.querySelectorAll('textarea').forEach(ta => autoResize(ta));
   });
+  updatePoolSlider();
 }
 
 function updateCard(i, field, val) { cardData[i][field]=val; saveToLocalStorage(); }
@@ -448,6 +500,7 @@ function loadFromLocalStorage() {
   loadProgress();
   renderCards();
   updateMasteryPanel();
+  updatePoolSlider();
 }
 
 function clearAll() {
@@ -455,7 +508,7 @@ function clearAll() {
   cardData = [{t:'',d:''},{t:'',d:''},{t:'',d:''},{t:'',d:''}];
   document.getElementById('set-title').value='';
   cardWeights={}; cardMastery={}; cardStreak={};
-  saveToLocalStorage(); saveProgress(); renderCards(); updateMasteryPanel();
+  saveToLocalStorage(); saveProgress(); renderCards(); updateMasteryPanel(); updatePoolSlider();
 }
 
 function downloadBackup() {
@@ -477,7 +530,7 @@ function uploadBackup(input) {
       if(data.cards) cardData=data.cards;
       if(data.weights) cardWeights=data.weights;
       if(data.mastery) cardMastery=data.mastery;
-      saveToLocalStorage(); saveProgress(); renderCards(); updateMasteryPanel();
+      saveToLocalStorage(); saveProgress(); renderCards(); updateMasteryPanel(); updatePoolSlider();
       alert('Backup loaded!');
     } catch { alert('Error: invalid file format.'); }
   };
@@ -494,7 +547,7 @@ function importBulk() {
   const newCards=text.split('\n').filter(l=>l.trim()).map(l=>{const p=l.split('\t');return{t:p[0]?.trim()||'',d:p[1]?.trim()||''};}).filter(c=>c.t||c.d);
   cardData=[...cardData,...newCards];
   document.getElementById('bulk-input').value='';
-  saveToLocalStorage(); renderCards(); updateMasteryPanel();
+  saveToLocalStorage(); renderCards(); updateMasteryPanel(); updatePoolSlider();
 }
 
 function addCard() {
@@ -505,7 +558,7 @@ function addCard() {
   last.querySelector('textarea').focus();
 }
 
-function deleteCard(i) { cardData.splice(i,1); saveToLocalStorage(); renderCards(); updateMasteryPanel(); }
+function deleteCard(i) { cardData.splice(i,1); saveToLocalStorage(); renderCards(); updateMasteryPanel(); updatePoolSlider(); }
 
 function loadSample() {
   document.getElementById('bulk-input').value=SAMPLE.map(c=>`${c.t}\t${c.d}`).join('\n');
@@ -513,14 +566,14 @@ function loadSample() {
   importBulk();
 }
 
-// ── Flip mode ────────────────────────────────────────────────────────────────
 function startFlipMode() {
   const valid = cardData.filter(c=>c.t.trim()&&c.d.trim());
   const err = document.getElementById('setup-err');
   if (valid.length<1){err.style.display='block';return;}
   err.style.display='none';
-  initWeights(valid);
-  cards = weightedShuffle(valid);
+  const subset = getPoolSubset(valid);
+  initWeights(subset);
+  cards = weightedShuffle(subset);
   flipIndex=0; showScreen('flip-screen'); showFlipCard();
 }
 
@@ -541,13 +594,15 @@ function toggleFlip(){document.getElementById('flip-card').classList.toggle('is-
 function nextFlip(){if(flipIndex<cards.length-1){flipIndex++;showFlipCard();}else{goSetup();}}
 function prevFlip(){if(flipIndex>0){flipIndex--;showFlipCard();}}
 
-// ── Quiz mode ────────────────────────────────────────────────────────────────
 function startQuiz() {
   const valid = cardData.filter(c=>c.t.trim()&&c.d.trim());
   const err = document.getElementById('setup-err');
-  if (valid.length<4){err.style.display='block';return;}
+  const subset = getPoolSubset(valid);
+  if (subset.length<4){err.style.display='block';return;}
   err.style.display='none';
-  cards=valid;
+  // Keep all valid cards available for distractors even in subset mode
+  cards = valid;
+  sessionPool = subset;
   initWeights(cards);
   buildChunks();
   totalCorrect=0; totalWrong=0; sessionAnswered=0;
@@ -555,9 +610,8 @@ function startQuiz() {
 }
 
 function buildChunks() {
-  // Exclude mastered cards from the active queue (but keep them in `cards` for distractors)
-  const active = cards.filter(c=>!cardMastery[getCardKey(c)]);
-  const studySet = active.length>=4 ? active : cards; // fallback if almost all mastered
+  const active = sessionPool.filter(c=>!cardMastery[getCardKey(c)]);
+  const studySet = active.length>=4 ? active : sessionPool;
   chunks=[];
   const ordered=weightedShuffle(studySet);
   for(let i=0;i<ordered.length;i+=10) chunks.push(ordered.slice(i,i+10));
@@ -601,7 +655,7 @@ function showQuestion() {
 
   document.getElementById('q-counter').textContent=`Chunk ${currentChunk+1}/${chunks.length}`;
   document.getElementById('question-counter').textContent=`Question ${chunkQuestion}/${chunkMax}`;
-  document.getElementById('prog').style.width=`${Math.round((totalCorrect/Math.max(1,cards.filter(c=>!cardMastery[getCardKey(c)]).length))*100)}%`;
+  document.getElementById('prog').style.width=`${Math.round((totalCorrect/Math.max(1,sessionPool.filter(c=>!cardMastery[getCardKey(c)]).length))*100)}%`;
   updateChunkIndicator();
 
   const rp=document.getElementById('review-pill');
@@ -622,6 +676,7 @@ function showQuestion() {
   document.getElementById('feedback').className='feedback-bar';
   document.getElementById('next-btn').style.display='none';
 
+  // Use full card pool for distractors so they're meaningful even with small subsets
   const wrongPool=cards.filter(c=>c[answerKey]!==current[answerKey]);
   const wrongs=pickDistractors(answerText,wrongPool,answerKey);
   const choices=shuffle([answerText,...wrongs]);
@@ -686,6 +741,9 @@ function showDone() {
   const mc=masteredCount();
   const tv=cardData.filter(c=>c.t.trim()&&c.d.trim()).length;
   document.getElementById('done-mastery-row').textContent=`${mc} of ${tv} cards mastered overall`;
+  const sliderVal=parseInt(document.getElementById('pool-slider').value);
+  document.getElementById('done-pool-row').textContent=
+    sliderVal===0?`Tested on all ${sessionPool.length} cards`:`Tested on ${sessionPool.length} of ${tv} cards (${POOL_LABELS[sliderVal].toLowerCase()})`;
   const [icon,title,sub]=
     pct===100?['🏆','Perfect score!','You nailed every card.']:
     pct>=80?['🎉','Great work!',`${pct}% — almost mastered it.`]:
