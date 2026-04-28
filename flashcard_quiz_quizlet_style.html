@@ -52,7 +52,7 @@ input:checked + .slider:before { transform: translateX(18px); }
 .card-field textarea:focus { border-bottom-color: #4255ff; }
 .card-field textarea::placeholder { color: var(--color-text-tertiary); }
 
-.add-card-btn { width: 100%; padding: 16px; background: var(--color-background-primary); border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-lg); font-size: 14px; font-weight: 500; color: var(--color-text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.12s, border-color 0.12s; margin-bottom: 1.5rem; }
+.add-card-btn { width: 100%; padding: 16px; background: var(--color-background-primary); border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-lg); font-size: 14px; font-weight: 500; color: var(--color-text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.12s; margin-bottom: 1.5rem; }
 .add-card-btn:hover { background: var(--color-background-secondary); color: var(--color-text-primary); }
 
 .btn-primary { background: var(--color-accent); color: #fff; border: none; border-radius: var(--border-radius-md); padding: 11px 28px; font-size: 14px; font-weight: 500; cursor: pointer; transition: opacity 0.15s; }
@@ -67,7 +67,7 @@ input:checked + .slider:before { transform: translateX(18px); }
 .q-card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1.75rem 1.5rem 1.25rem; }
 .q-text { font-size: 19px; font-weight: 500; color: var(--color-text-primary); line-height: 1.5; margin-bottom: 1.5rem; }
 
-.choice-btn { display: flex; align-items: flex-start; gap: 12px; width: 100%; text-align: left; padding: 13px 16px; background: var(--color-background-primary); border: 1.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); font-size: 14px; color: var(--color-text-primary); cursor: pointer; margin-bottom: 10px; transition: background 0.1s, border-color 0.1s, color 0.1s; line-height: 1.45; }
+.choice-btn { display: flex; align-items: flex-start; gap: 12px; width: 100%; text-align: left; padding: 13px 16px; background: var(--color-background-primary); border: 1.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); font-size: 14px; color: var(--color-text-primary); cursor: pointer; margin-bottom: 10px; transition: background 0.1s, border-color 0.1s; line-height: 1.45; }
 .choice-btn:hover:not(:disabled) { background: #eef0ff; border-color: #4255ff; color: #102a43; }
 .choice-btn:hover:not(:disabled) .choice-letter { border-color: #4255ff; color: #102a43; }
 .choice-btn:disabled { cursor: default; }
@@ -85,14 +85,21 @@ input:checked + .slider:before { transform: translateX(18px); }
 .feedback-bar { display: none; margin-top: 12px; padding: 12px 16px; border-radius: var(--border-radius-md); font-size: 14px; font-weight: 500; }
 .feedback-bar.correct { display: flex; align-items: center; gap: 8px; background: #e8f5e9; color: #2e7d32; }
 .feedback-bar.wrong { display: flex; align-items: center; gap: 8px; background: #ffebee; color: #c62828; }
+.feedback-bar.mastered { display: flex; align-items: center; gap: 8px; background: #e3f2fd; color: #1565c0; }
 
 .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 1.25rem 0; }
 .stat-card { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 14px; text-align: center; }
 .stat-num { font-size: 28px; font-weight: 500; color: var(--color-text-primary); }
 .stat-lbl { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; }
 
+.mastery-bar-wrap { background: var(--color-background-secondary); border-radius: var(--border-radius-lg); padding: 14px 16px; margin-bottom: 1.25rem; }
+.mastery-bar-track { background: var(--color-border-secondary); border-radius: 99px; height: 6px; margin: 8px 0 6px; overflow: hidden; }
+.mastery-bar-fill { background: var(--color-accent-tertiary); height: 100%; border-radius: 99px; transition: width 0.5s ease; }
+.mastery-tag { display: inline-block; font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 99px; background: #e3f2fd; color: #1565c0; margin-left: 6px; vertical-align: middle; }
+
 .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
 .pill-review { font-size: 12px; padding: 3px 10px; border-radius: 99px; font-weight: 500; background: #fff3e0; color: #e65100; }
+.pill-mastered { font-size: 12px; padding: 3px 10px; border-radius: 99px; font-weight: 500; background: #e3f2fd; color: #1565c0; }
 h2 { font-size: 18px; font-weight: 500; color: var(--color-text-primary); }
 </style>
 
@@ -104,17 +111,32 @@ h2 { font-size: 18px; font-weight: 500; color: var(--color-text-primary); }
       <h2 style="font-size:22px;">Create a new study set</h2>
       <p style="font-size:13px;color:var(--color-text-secondary);margin-top:4px;">Add at least 4 cards, then hit a mode to start studying.</p>
     </div>
+
+    <div id="mastery-panel" style="display:none;" class="mastery-bar-wrap">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <div>
+          <span style="font-size:14px;font-weight:500;color:var(--color-text-primary);">Mastery progress</span>
+          <span id="mastery-label" style="font-size:13px;color:var(--color-text-secondary);margin-left:8px;"></span>
+        </div>
+        <button class="btn-ghost" style="font-size:12px;padding:5px 12px;" onclick="resetMastery()">Reset mastery</button>
+      </div>
+      <div class="mastery-bar-track"><div class="mastery-bar-fill" id="mastery-bar-fill" style="width:0%"></div></div>
+      <div style="font-size:12px;color:var(--color-text-tertiary);">Cards answered correctly 3× in a row are marked mastered and skipped in new sessions.</div>
+    </div>
+
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:1.5rem;">
       <button class="btn-primary" onclick="startQuiz()">Multiple choice</button>
       <button class="btn-primary" style="background:var(--color-accent-tertiary);" onclick="startFlipMode()">Flashcards</button>
       <button class="btn-ghost" onclick="loadSample()">Load sample set</button>
       <p id="setup-err" style="font-size:13px;color:#c62828;margin:0;display:none;width:100%;">Add at least 4 cards (each needs a term and definition) to start.</p>
     </div>
+
     <input class="set-title-input" id="set-title" type="text" placeholder='Enter a title, like "Biology Ch. 12"' oninput="saveToLocalStorage()" />
     <label class="switch-wrap">
       <div class="switch"><input type="checkbox" id="swap-toggle" onchange="saveToLocalStorage()"><span class="slider"></span></div>
       <span style="font-size:14px;color:var(--color-text-secondary);">Swap Term & Definition</span>
     </label>
+
     <div style="margin-bottom:1.5rem;padding:12px;border:1px dashed var(--color-border-secondary);border-radius:var(--border-radius-md);">
       <label style="font-size:14px;color:var(--color-text-secondary);display:block;margin-bottom:8px;">Backup & Export</label>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -123,11 +145,13 @@ h2 { font-size: 18px; font-weight: 500; color: var(--color-text-primary); }
         <label class="btn-ghost" style="font-size:12px;padding:6px 12px;cursor:pointer;">Upload .json backup<input type="file" id="import-file" style="display:none;" onchange="uploadBackup(this)"></label>
       </div>
     </div>
+
     <div style="margin-bottom:1.5rem;">
       <label style="font-size:14px;color:var(--color-text-secondary);display:block;margin-bottom:6px;">Bulk import (optional)</label>
       <textarea id="bulk-input" placeholder="Paste cards here, one per line: Question&#9;Answer" style="width:100%;height:100px;padding:12px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);font-size:14px;font-family:var(--font-sans);resize:vertical;outline:none;"></textarea>
       <button class="btn-ghost" style="margin-top:8px;" onclick="importBulk()">Import cards</button>
     </div>
+
     <div style="position:sticky;top:0;background:var(--color-background-primary);padding:10px 0;z-index:10;border-bottom:1px solid var(--color-border-secondary);margin-bottom:1rem;">
       <input type="text" id="search-input" placeholder="Search cards..." oninput="renderCards()" style="width:100%;padding:10px 14px;border-radius:var(--border-radius-md);border:1px solid var(--color-border-secondary);background:var(--color-background-secondary);color:var(--color-text-primary);outline:none;font-size:14px;">
     </div>
@@ -161,8 +185,9 @@ h2 { font-size: 18px; font-weight: 500; color: var(--color-text-primary); }
     <div class="top-bar">
       <span id="q-counter" style="font-size:13px;color:var(--color-text-secondary);"></span>
       <div id="question-counter" style="font-size:12px;color:var(--color-text-secondary);margin-top:4px;"></div>
-      <div style="display:flex;gap:8px;align-items:center;">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
         <span id="review-pill" class="pill-review" style="display:none;"></span>
+        <span id="mastered-pill" class="pill-mastered" style="display:none;"></span>
         <button class="btn-ghost" style="padding:7px 14px;font-size:12px;" onclick="endSession()">End session</button>
       </div>
     </div>
@@ -190,6 +215,7 @@ h2 { font-size: 18px; font-weight: 500; color: var(--color-text-primary); }
       <div class="stat-card"><div class="stat-num" id="s-wrong">0</div><div class="stat-lbl">Missed</div></div>
       <div class="stat-card"><div class="stat-num" id="s-pct">0%</div><div class="stat-lbl">Accuracy</div></div>
     </div>
+    <div id="done-mastery-row" style="margin:0.5rem 0 1rem;text-align:center;font-size:13px;color:var(--color-text-secondary);"></div>
     <div style="display:flex;gap:10px;margin-top:1.25rem;flex-wrap:wrap;">
       <button class="btn-primary" onclick="restartSame()">Study again</button>
       <button class="btn-ghost" onclick="goSetup()">Edit cards</button>
@@ -199,13 +225,23 @@ h2 { font-size: 18px; font-weight: 500; color: var(--color-text-primary); }
 
 <script>
 const LETTERS = ['A','B','C','D'];
+const MASTERY_THRESHOLD = 3;
+const LS_PREFIX = 'fcq_';
+
 let cardData = [];
 let cards = [], chunks = [], currentChunk = 0, queue = [], reviewQueue = [];
 let current = null, answered = false;
 let totalCorrect = 0, totalWrong = 0, sessionAnswered = 0;
 let chunkMax = 0, chunkQuestion = 0;
 let flipIndex = 0;
+
+// Persistent state: weights + mastery + streak per card
+// cardWeights: { key: number }  — higher = shown more
+// cardMastery: { key: bool }    — true = mastered
+// cardStreak:  { key: number }  — consecutive correct count this session
 let cardWeights = {};
+let cardMastery = {};
+let cardStreak  = {};
 
 const SAMPLE = [
   { t: 'Mitochondria', d: 'The powerhouse of the cell; produces ATP via cellular respiration' },
@@ -216,16 +252,88 @@ const SAMPLE = [
   { t: 'Ribosome', d: 'Organelle responsible for protein synthesis, reading mRNA to assemble amino acids' },
 ];
 
-// Normalize a string for deduplication comparison:
-// lowercase, strip leading articles (a/an/the), collapse whitespace, strip punctuation
+// ── Key helpers ──────────────────────────────────────────────────────────────
+function getCardKey(card) { return card.t + '|||' + card.d; }
+
 function normalize(str) {
-  return str
-    .toLowerCase()
-    .trim()
+  return str.toLowerCase().trim()
     .replace(/^(the|a|an)\s+/i, '')
     .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+    .replace(/\s+/g, ' ').trim();
+}
+
+// ── Persistent storage ───────────────────────────────────────────────────────
+function persistenceKey(suffix) { return LS_PREFIX + suffix; }
+
+function saveProgress() {
+  try {
+    localStorage.setItem(persistenceKey('weights'), JSON.stringify(cardWeights));
+    localStorage.setItem(persistenceKey('mastery'), JSON.stringify(cardMastery));
+  } catch(e) {}
+}
+
+function loadProgress() {
+  try {
+    const w = localStorage.getItem(persistenceKey('weights'));
+    const m = localStorage.getItem(persistenceKey('mastery'));
+    if (w) cardWeights = JSON.parse(w);
+    if (m) cardMastery = JSON.parse(m);
+  } catch(e) {}
+}
+
+function initWeights(cardList) {
+  // Only initialise keys that don't already exist — preserve persistent state
+  cardList.forEach(c => {
+    const k = getCardKey(c);
+    if (cardWeights[k] === undefined) cardWeights[k] = 1;
+    if (cardMastery[k] === undefined) cardMastery[k] = false;
+    cardStreak[k] = 0; // streak always resets each session
+  });
+}
+
+function resetMastery() {
+  if (!confirm('Reset mastery for all cards? They will all be included in your next session.')) return;
+  Object.keys(cardMastery).forEach(k => { cardMastery[k] = false; });
+  Object.keys(cardWeights).forEach(k => { cardWeights[k] = 1; });
+  saveProgress();
+  updateMasteryPanel();
+}
+
+function masteredCount() {
+  return cardData.filter(c => c.t.trim() && c.d.trim() && cardMastery[getCardKey(c)]).length;
+}
+
+function updateMasteryPanel() {
+  const valid = cardData.filter(c => c.t.trim() && c.d.trim());
+  const panel = document.getElementById('mastery-panel');
+  if (valid.length === 0) { panel.style.display = 'none'; return; }
+  const mc = masteredCount();
+  const total = valid.length;
+  const pct = Math.round((mc / total) * 100);
+  panel.style.display = 'block';
+  document.getElementById('mastery-label').textContent = `${mc} / ${total} mastered`;
+  document.getElementById('mastery-bar-fill').style.width = pct + '%';
+}
+
+// ── Record result & mastery logic ────────────────────────────────────────────
+// Returns true if the card just became newly mastered this answer
+function recordResult(card, correct) {
+  const k = getCardKey(card);
+  if (correct) {
+    cardWeights[k] = Math.max(1, (cardWeights[k] || 1) - 0.5);
+    cardStreak[k] = (cardStreak[k] || 0) + 1;
+    if (!cardMastery[k] && cardStreak[k] >= MASTERY_THRESHOLD) {
+      cardMastery[k] = true;
+      saveProgress();
+      return true; // newly mastered
+    }
+  } else {
+    cardWeights[k] = Math.min(5, (cardWeights[k] || 1) + 2);
+    cardStreak[k] = 0;
+    cardMastery[k] = false; // wrong answer un-masters the card
+  }
+  saveProgress();
+  return false;
 }
 
 // ── Distractor scoring ───────────────────────────────────────────────────────
@@ -234,74 +342,44 @@ function distractorScore(candidate, target) {
   const t = target.toLowerCase().trim();
   let score = 0;
   if (c[0] === t[0]) score += 30;
-  const cWords = c.split(/\s+/);
-  const tWords = t.split(/\s+/);
+  const cWords = c.split(/\s+/), tWords = t.split(/\s+/);
   if (cWords[0] === tWords[0]) score += 25;
-  const wordDiff = Math.abs(cWords.length - tWords.length);
-  score += Math.max(0, 20 - wordDiff * 7);
-  const lenDiff = Math.abs(c.length - t.length);
-  score += Math.max(0, 15 - lenDiff * 1.5);
+  score += Math.max(0, 20 - Math.abs(cWords.length - tWords.length) * 7);
+  score += Math.max(0, 15 - Math.abs(c.length - t.length) * 1.5);
   const stops = new Set(['the','a','an','of','in','is','are','to','and','or','for','that','this','with','by','on','at','from','as','its','it','be','was','were','has','have']);
   const tSet = new Set(tWords.filter(w => !stops.has(w) && w.length > 2));
-  const shared = cWords.filter(w => !stops.has(w) && w.length > 2 && tSet.has(w)).length;
-  score += shared * 10;
+  score += cWords.filter(w => !stops.has(w) && w.length > 2 && tSet.has(w)).length * 10;
   if (c === t) score = -999;
   return score;
 }
 
-// Pick 3 distractors, deduplicating against the correct answer and each other
 function pickDistractors(correctAnswer, pool, answerKey) {
   const correctNorm = normalize(correctAnswer);
-
-  // Build candidate list, deduplicating against the correct answer and prior candidates
   const seenNorms = new Set([correctNorm]);
   const candidates = [];
-
   pool.forEach(c => {
     const text = (answerKey === 'd' ? c.d : c.t).trim();
     if (!text) return;
     const norm = normalize(text);
-    if (seenNorms.has(norm)) return; // duplicate of correct answer or a prior candidate
+    if (seenNorms.has(norm)) return;
     seenNorms.add(norm);
     candidates.push({ text, score: distractorScore(text, correctAnswer) });
   });
-
-  // Sort by score descending
   candidates.sort((a, b) => b.score - a.score);
-
   const topPool = shuffle([...candidates.slice(0, Math.min(4, candidates.length))]);
   const restPool = shuffle([...candidates.slice(4)]);
-
   const chosen = [];
-  const pickFrom = (arr) => {
-    if (!arr.length) return null;
-    return arr.shift();
-  };
-
-  const r1 = pickFrom(topPool);
-  const r2 = pickFrom(topPool);
-  const r3 = restPool.length > 0 ? pickFrom(restPool) : pickFrom(topPool);
-
-  [r1, r2, r3].forEach(r => { if (r) chosen.push(r); });
-
-  // Fill gaps if pool was small
+  const pickFrom = arr => arr.length ? arr.shift() : null;
+  [pickFrom(topPool), pickFrom(topPool), restPool.length ? pickFrom(restPool) : pickFrom(topPool)]
+    .forEach(r => { if (r && !chosen.find(x => x.text === r.text)) chosen.push(r); });
   while (chosen.length < Math.min(3, candidates.length)) {
-    const fallback = candidates.find(c => !chosen.find(x => x.text === c.text));
-    if (fallback) chosen.push(fallback);
-    else break;
+    const fb = candidates.find(c => !chosen.find(x => x.text === c.text));
+    if (fb) chosen.push(fb); else break;
   }
-
   return chosen.map(x => x.text);
 }
 
-// ── Weighted randomization ───────────────────────────────────────────────────
-function getCardKey(card) { return card.t + '|||' + card.d; }
-
-function initWeights(cardList) {
-  cardWeights = {};
-  cardList.forEach(c => { cardWeights[getCardKey(c)] = 1; });
-}
-
+// ── Weighted shuffle ─────────────────────────────────────────────────────────
 function weightedShuffle(arr) {
   const pool = [];
   arr.forEach(c => {
@@ -309,61 +387,41 @@ function weightedShuffle(arr) {
     for (let i = 0; i < w; i++) pool.push(c);
   });
   const shuffled = shuffle(pool);
-  const seen = new Set();
-  const result = [];
-  shuffled.forEach(c => {
-    const k = getCardKey(c);
-    if (!seen.has(k)) { seen.add(k); result.push(c); }
-  });
-  arr.forEach(c => {
-    const k = getCardKey(c);
-    if (!seen.has(k)) result.push(c);
-  });
+  const seen = new Set(), result = [];
+  shuffled.forEach(c => { const k = getCardKey(c); if (!seen.has(k)) { seen.add(k); result.push(c); } });
+  arr.forEach(c => { const k = getCardKey(c); if (!seen.has(k)) result.push(c); });
   return result;
 }
 
-function recordResult(card, correct) {
-  const k = getCardKey(card);
-  if (correct) {
-    cardWeights[k] = Math.max(1, (cardWeights[k] || 1) - 0.5);
-  } else {
-    cardWeights[k] = Math.min(5, (cardWeights[k] || 1) + 2);
-  }
-}
-
-// ── Utility ──────────────────────────────────────────────────────────────────
-function autoResize(ta) { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; }
-
 function shuffle(arr) {
   const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
   return a;
 }
 
 // ── Card editor ──────────────────────────────────────────────────────────────
+function autoResize(ta) { ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; }
+
 function renderCards() {
   const list = document.getElementById('cards-list');
   const query = document.getElementById('search-input')?.value.toLowerCase() || '';
   list.innerHTML = '';
   cardData.forEach((c, i) => {
     if (query && !c.t.toLowerCase().includes(query) && !c.d.toLowerCase().includes(query)) return;
+    const isMastered = cardMastery[getCardKey(c)];
     const row = document.createElement('div');
     row.className = 'card-row';
+    row.style.borderColor = isMastered ? '#1565c0' : '';
     row.innerHTML = `
       <div class="card-row-header">
-        <span class="card-num">${i + 1}</span>
-        ${cardData.length > 1 ? `<button class="delete-btn" onclick="deleteCard(${i})" title="Remove card">×</button>` : ''}
+        <span class="card-num">${i+1}${isMastered ? ' <span class="mastery-tag">mastered</span>' : ''}</span>
+        ${cardData.length>1?`<button class="delete-btn" onclick="deleteCard(${i})" title="Remove">×</button>`:''}
       </div>
       <div class="card-fields">
-        <div class="card-field">
-          <span class="card-field-label">Term</span>
+        <div class="card-field"><span class="card-field-label">Term</span>
           <textarea rows="1" placeholder="Enter term" oninput="updateCard(${i},'t',this.value);autoResize(this)">${c.t}</textarea>
         </div>
-        <div class="card-field">
-          <span class="card-field-label">Definition</span>
+        <div class="card-field"><span class="card-field-label">Definition</span>
           <textarea rows="1" placeholder="Enter definition" oninput="updateCard(${i},'d',this.value);autoResize(this)">${c.d}</textarea>
         </div>
       </div>`;
@@ -372,286 +430,299 @@ function renderCards() {
   });
 }
 
-function updateCard(i, field, val) { cardData[i][field] = val; saveToLocalStorage(); }
+function updateCard(i, field, val) { cardData[i][field]=val; saveToLocalStorage(); }
 
 function saveToLocalStorage() {
-  localStorage.setItem('quizlet_clone_title', document.getElementById('set-title').value);
-  localStorage.setItem('quizlet_clone_swap', document.getElementById('swap-toggle').checked);
-  localStorage.setItem('quizlet_clone_cards', JSON.stringify(cardData));
+  localStorage.setItem(persistenceKey('title'), document.getElementById('set-title').value);
+  localStorage.setItem(persistenceKey('swap'), document.getElementById('swap-toggle').checked);
+  localStorage.setItem(persistenceKey('cards'), JSON.stringify(cardData));
 }
 
 function loadFromLocalStorage() {
-  const t = localStorage.getItem('quizlet_clone_title');
-  if (t !== null) document.getElementById('set-title').value = t;
-  const s = localStorage.getItem('quizlet_clone_swap');
-  if (s !== null) document.getElementById('swap-toggle').checked = s === 'true';
-  const c = localStorage.getItem('quizlet_clone_cards');
-  cardData = c ? JSON.parse(c) : [{ t:'',d:'' },{ t:'',d:'' },{ t:'',d:'' },{ t:'',d:'' }];
+  const t = localStorage.getItem(persistenceKey('title'));
+  if (t!==null) document.getElementById('set-title').value=t;
+  const s = localStorage.getItem(persistenceKey('swap'));
+  if (s!==null) document.getElementById('swap-toggle').checked=s==='true';
+  const c = localStorage.getItem(persistenceKey('cards'));
+  cardData = c ? JSON.parse(c) : [{t:'',d:''},{t:'',d:''},{t:'',d:''},{t:'',d:''}];
+  loadProgress();
   renderCards();
+  updateMasteryPanel();
 }
 
 function clearAll() {
-  if (confirm('Are you sure you want to clear all cards?')) {
-    cardData = [{ t:'',d:'' },{ t:'',d:'' },{ t:'',d:'' },{ t:'',d:'' }];
-    document.getElementById('set-title').value = '';
-    saveToLocalStorage(); renderCards();
-  }
+  if (!confirm('Clear all cards?')) return;
+  cardData = [{t:'',d:''},{t:'',d:''},{t:'',d:''},{t:'',d:''}];
+  document.getElementById('set-title').value='';
+  cardWeights={}; cardMastery={}; cardStreak={};
+  saveToLocalStorage(); saveProgress(); renderCards(); updateMasteryPanel();
 }
 
 function downloadBackup() {
-  const data = { title: document.getElementById('set-title').value, swap: document.getElementById('swap-toggle').checked, cards: cardData };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = `quizlet_backup_${data.title || 'set'}.json`; a.click();
+  const data={title:document.getElementById('set-title').value,swap:document.getElementById('swap-toggle').checked,cards:cardData,weights:cardWeights,mastery:cardMastery};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=`fcq_backup_${data.title||'set'}.json`; a.click();
   URL.revokeObjectURL(url);
 }
 
 function uploadBackup(input) {
-  const file = input.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (e) => {
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=(e)=>{
     try {
-      const data = JSON.parse(e.target.result);
-      if (data.title !== undefined) document.getElementById('set-title').value = data.title;
-      if (data.swap !== undefined) document.getElementById('swap-toggle').checked = data.swap;
-      if (data.cards) cardData = data.cards;
-      saveToLocalStorage(); renderCards(); alert('Backup loaded!');
+      const data=JSON.parse(e.target.result);
+      if(data.title!==undefined) document.getElementById('set-title').value=data.title;
+      if(data.swap!==undefined) document.getElementById('swap-toggle').checked=data.swap;
+      if(data.cards) cardData=data.cards;
+      if(data.weights) cardWeights=data.weights;
+      if(data.mastery) cardMastery=data.mastery;
+      saveToLocalStorage(); saveProgress(); renderCards(); updateMasteryPanel();
+      alert('Backup loaded!');
     } catch { alert('Error: invalid file format.'); }
   };
-  reader.readAsText(file); input.value = '';
+  reader.readAsText(file); input.value='';
 }
 
 function exportToClipboard() {
-  navigator.clipboard.writeText(cardData.map(c => `${c.t}\t${c.d}`).join('\n'))
-    .then(() => alert('Cards copied to clipboard!'));
+  navigator.clipboard.writeText(cardData.map(c=>`${c.t}\t${c.d}`).join('\n'))
+    .then(()=>alert('Copied to clipboard!'));
 }
 
 function importBulk() {
-  const text = document.getElementById('bulk-input').value;
-  const newCards = text.split('\n').filter(l => l.trim()).map(l => {
-    const p = l.split('\t'); return { t: p[0]?.trim()||'', d: p[1]?.trim()||'' };
-  }).filter(c => c.t || c.d);
-  cardData = [...cardData, ...newCards];
-  document.getElementById('bulk-input').value = '';
-  saveToLocalStorage(); renderCards();
+  const text=document.getElementById('bulk-input').value;
+  const newCards=text.split('\n').filter(l=>l.trim()).map(l=>{const p=l.split('\t');return{t:p[0]?.trim()||'',d:p[1]?.trim()||''};}).filter(c=>c.t||c.d);
+  cardData=[...cardData,...newCards];
+  document.getElementById('bulk-input').value='';
+  saveToLocalStorage(); renderCards(); updateMasteryPanel();
 }
 
 function addCard() {
-  cardData.push({ t:'',d:'' }); saveToLocalStorage(); renderCards();
-  const rows = document.querySelectorAll('.card-row');
-  const last = rows[rows.length - 1];
-  last.scrollIntoView({ behavior:'smooth', block:'center' });
+  cardData.push({t:'',d:''}); saveToLocalStorage(); renderCards();
+  const rows=document.querySelectorAll('.card-row');
+  const last=rows[rows.length-1];
+  last.scrollIntoView({behavior:'smooth',block:'center'});
   last.querySelector('textarea').focus();
 }
 
-function deleteCard(i) { cardData.splice(i,1); saveToLocalStorage(); renderCards(); }
+function deleteCard(i) { cardData.splice(i,1); saveToLocalStorage(); renderCards(); updateMasteryPanel(); }
 
 function loadSample() {
-  document.getElementById('bulk-input').value = SAMPLE.map(c => `${c.t}\t${c.d}`).join('\n');
-  document.getElementById('set-title').value = 'Biology — Key Concepts';
+  document.getElementById('bulk-input').value=SAMPLE.map(c=>`${c.t}\t${c.d}`).join('\n');
+  document.getElementById('set-title').value='Biology — Key Concepts';
   importBulk();
 }
 
 // ── Flip mode ────────────────────────────────────────────────────────────────
 function startFlipMode() {
-  const valid = cardData.filter(c => c.t.trim() && c.d.trim());
+  const valid = cardData.filter(c=>c.t.trim()&&c.d.trim());
   const err = document.getElementById('setup-err');
-  if (valid.length < 1) { err.style.display='block'; return; }
-  err.style.display = 'none';
+  if (valid.length<1){err.style.display='block';return;}
+  err.style.display='none';
   initWeights(valid);
   cards = weightedShuffle(valid);
-  flipIndex = 0; showScreen('flip-screen'); showFlipCard();
+  flipIndex=0; showScreen('flip-screen'); showFlipCard();
 }
 
 function showFlipCard() {
-  const c = cards[flipIndex];
-  const swap = document.getElementById('swap-toggle').checked;
+  const c=cards[flipIndex];
+  const swap=document.getElementById('swap-toggle').checked;
+  const isMastered=cardMastery[getCardKey(c)];
   document.getElementById('flip-card').classList.remove('is-flipped');
-  document.getElementById('f-front').textContent = swap ? c.d : c.t;
-  document.getElementById('f-back').textContent = swap ? c.t : c.d;
-  document.getElementById('f-counter').textContent = `Card ${flipIndex + 1} of ${cards.length}`;
-  document.getElementById('f-prog').style.width = `${((flipIndex + 1) / cards.length) * 100}%`;
-  document.getElementById('f-prev').disabled = flipIndex === 0;
-  document.getElementById('f-next').textContent = flipIndex === cards.length - 1 ? 'Finish' : 'Next →';
+  document.getElementById('f-front').textContent=swap?c.d:c.t;
+  document.getElementById('f-back').textContent=swap?c.t:c.d;
+  document.getElementById('f-counter').textContent=`Card ${flipIndex+1} of ${cards.length}${isMastered?' ✓ mastered':''}`;
+  document.getElementById('f-prog').style.width=`${((flipIndex+1)/cards.length)*100}%`;
+  document.getElementById('f-prev').disabled=flipIndex===0;
+  document.getElementById('f-next').textContent=flipIndex===cards.length-1?'Finish':'Next →';
 }
 
-function toggleFlip() { document.getElementById('flip-card').classList.toggle('is-flipped'); }
-function nextFlip() { if (flipIndex < cards.length - 1) { flipIndex++; showFlipCard(); } else { goSetup(); } }
-function prevFlip() { if (flipIndex > 0) { flipIndex--; showFlipCard(); } }
+function toggleFlip(){document.getElementById('flip-card').classList.toggle('is-flipped');}
+function nextFlip(){if(flipIndex<cards.length-1){flipIndex++;showFlipCard();}else{goSetup();}}
+function prevFlip(){if(flipIndex>0){flipIndex--;showFlipCard();}}
 
 // ── Quiz mode ────────────────────────────────────────────────────────────────
 function startQuiz() {
-  const valid = cardData.filter(c => c.t.trim() && c.d.trim());
+  const valid = cardData.filter(c=>c.t.trim()&&c.d.trim());
   const err = document.getElementById('setup-err');
-  if (valid.length < 4) { err.style.display='block'; return; }
-  err.style.display = 'none';
-  cards = valid;
+  if (valid.length<4){err.style.display='block';return;}
+  err.style.display='none';
+  cards=valid;
   initWeights(cards);
   buildChunks();
-  totalCorrect = 0; totalWrong = 0; sessionAnswered = 0;
-  showScreen('quiz-screen');
-  showQuestion();
+  totalCorrect=0; totalWrong=0; sessionAnswered=0;
+  showScreen('quiz-screen'); showQuestion();
 }
 
 function buildChunks() {
-  chunks = [];
-  const ordered = weightedShuffle(cards);
-  for (let i = 0; i < ordered.length; i += 10) chunks.push(ordered.slice(i, i + 10));
-  currentChunk = 0;
-  queue = [...chunks[0]];
-  reviewQueue = [];
-  chunkMax = chunks[0].length;
-  chunkQuestion = 0;
+  // Exclude mastered cards from the active queue (but keep them in `cards` for distractors)
+  const active = cards.filter(c=>!cardMastery[getCardKey(c)]);
+  const studySet = active.length>=4 ? active : cards; // fallback if almost all mastered
+  chunks=[];
+  const ordered=weightedShuffle(studySet);
+  for(let i=0;i<ordered.length;i+=10) chunks.push(ordered.slice(i,i+10));
+  if(chunks.length===0) chunks=[[]];
+  currentChunk=0;
+  queue=[...chunks[0]];
+  reviewQueue=[]; chunkMax=chunks[0].length; chunkQuestion=0;
 }
 
 function updateChunkIndicator() {
-  const ind = document.getElementById('chunk-indicator');
-  ind.innerHTML = '';
-  chunks.forEach((_, i) => {
-    const div = document.createElement('div');
-    div.style.cssText = `width:24px;height:6px;border-radius:3px;transition:background 0.3s;background:${
-      i < currentChunk ? 'var(--color-accent)' : i === currentChunk ? 'var(--color-accent-secondary)' : 'var(--color-border-secondary)'
-    }`;
+  const ind=document.getElementById('chunk-indicator');
+  ind.innerHTML='';
+  chunks.forEach((_,i)=>{
+    const div=document.createElement('div');
+    div.style.cssText=`width:24px;height:6px;border-radius:3px;transition:background 0.3s;background:${i<currentChunk?'var(--color-accent)':i===currentChunk?'var(--color-accent-secondary)':'var(--color-border-secondary)'}`;
     ind.appendChild(div);
   });
 }
 
 function showScreen(id) {
-  ['setup-screen','quiz-screen','flip-screen','done-screen'].forEach(s =>
-    document.getElementById(s).classList.toggle('active', s === id));
+  ['setup-screen','quiz-screen','flip-screen','done-screen'].forEach(s=>
+    document.getElementById(s).classList.toggle('active',s===id));
 }
 
 function showQuestion() {
-  if (queue.length === 0) {
-    if (reviewQueue.length > 0) {
-      queue = weightedShuffle(reviewQueue);
-      chunkMax = reviewQueue.length; chunkQuestion = 0; reviewQueue = [];
+  if(queue.length===0){
+    if(reviewQueue.length>0){
+      queue=weightedShuffle(reviewQueue);
+      chunkMax=reviewQueue.length; chunkQuestion=0; reviewQueue=[];
     } else {
       currentChunk++;
-      if (currentChunk < chunks.length) {
-        queue = [...chunks[currentChunk]];
-        chunkMax = chunks[currentChunk].length; chunkQuestion = 0; reviewQueue = [];
+      if(currentChunk<chunks.length){
+        queue=[...chunks[currentChunk]];
+        chunkMax=chunks[currentChunk].length; chunkQuestion=0; reviewQueue=[];
       } else { showDone(); return; }
     }
   }
 
-  current = queue.shift();
-  answered = false;
-  chunkQuestion++;
+  current=queue.shift();
+  answered=false; chunkQuestion++;
 
-  document.getElementById('q-counter').textContent = `Chunk ${currentChunk + 1}/${chunks.length}`;
-  document.getElementById('question-counter').textContent = `Question ${chunkQuestion}/${chunkMax}`;
-  document.getElementById('prog').style.width = `${Math.round((totalCorrect / cards.length) * 100)}%`;
+  document.getElementById('q-counter').textContent=`Chunk ${currentChunk+1}/${chunks.length}`;
+  document.getElementById('question-counter').textContent=`Question ${chunkQuestion}/${chunkMax}`;
+  document.getElementById('prog').style.width=`${Math.round((totalCorrect/Math.max(1,cards.filter(c=>!cardMastery[getCardKey(c)]).length))*100)}%`;
   updateChunkIndicator();
 
-  const rp = document.getElementById('review-pill');
-  if (reviewQueue.length > 0) { rp.style.display='inline-block'; rp.textContent=`${reviewQueue.length} to retry`; }
-  else rp.style.display = 'none';
+  const rp=document.getElementById('review-pill');
+  if(reviewQueue.length>0){rp.style.display='inline-block';rp.textContent=`${reviewQueue.length} to retry`;}
+  else rp.style.display='none';
 
-  document.getElementById('round-msg').style.display = reviewQueue.length > 0 ? 'block' : 'none';
+  const mp=document.getElementById('mastered-pill');
+  const mc=masteredCount();
+  if(mc>0){mp.style.display='inline-block';mp.textContent=`${mc} mastered`;}
+  else mp.style.display='none';
 
-  const swap = document.getElementById('swap-toggle').checked;
-  const answerKey = swap ? 't' : 'd';
-  const questionText = swap ? current.d : current.t;
-  const answerText = current[answerKey];
+  document.getElementById('round-msg').style.display=reviewQueue.length>0?'block':'none';
 
-  document.getElementById('q-text').textContent = questionText;
-  document.getElementById('feedback').className = 'feedback-bar';
-  document.getElementById('next-btn').style.display = 'none';
+  const swap=document.getElementById('swap-toggle').checked;
+  const answerKey=swap?'t':'d';
+  const answerText=current[answerKey];
+  document.getElementById('q-text').textContent=swap?current.d:current.t;
+  document.getElementById('feedback').className='feedback-bar';
+  document.getElementById('next-btn').style.display='none';
 
-  // Build distractor pool: exclude the current card, then deduplicate within pickDistractors
-  const wrongPool = cards.filter(c => c[answerKey] !== current[answerKey]);
-  const wrongs = pickDistractors(answerText, wrongPool, answerKey);
-  const choices = shuffle([answerText, ...wrongs]);
+  const wrongPool=cards.filter(c=>c[answerKey]!==current[answerKey]);
+  const wrongs=pickDistractors(answerText,wrongPool,answerKey);
+  const choices=shuffle([answerText,...wrongs]);
 
-  const choicesEl = document.getElementById('choices');
-  choicesEl.innerHTML = '';
-  choices.forEach((ch, idx) => {
-    const btn = document.createElement('button');
-    btn.className = 'choice-btn';
-    btn.innerHTML = `<span class="choice-letter">${LETTERS[idx]}</span><span class="choice-text">${ch}</span><span style="margin-left:auto;font-size:10px;color:var(--color-text-tertiary);border:1px solid var(--color-border-secondary);padding:1px 4px;border-radius:3px;opacity:0.6;">${idx+1}</span>`;
-    btn.onclick = () => pick(btn, ch, answerText);
+  const choicesEl=document.getElementById('choices');
+  choicesEl.innerHTML='';
+  choices.forEach((ch,idx)=>{
+    const btn=document.createElement('button');
+    btn.className='choice-btn';
+    btn.innerHTML=`<span class="choice-letter">${LETTERS[idx]}</span><span class="choice-text">${ch}</span><span style="margin-left:auto;font-size:10px;color:var(--color-text-tertiary);border:1px solid var(--color-border-secondary);padding:1px 4px;border-radius:3px;opacity:0.6;">${idx+1}</span>`;
+    btn.onclick=()=>pick(btn,ch,answerText);
     choicesEl.appendChild(btn);
   });
 }
 
 function pick(btn, choice, answerText) {
-  if (answered) return;
-  answered = true; sessionAnswered++;
-  const isCorrect = choice === answerText;
-
-  document.querySelectorAll('.choice-btn').forEach(b => {
-    b.disabled = true;
-    if (b.querySelector('.choice-text').textContent === answerText) b.classList.add('reveal');
+  if(answered) return;
+  answered=true; sessionAnswered++;
+  const isCorrect=choice===answerText;
+  document.querySelectorAll('.choice-btn').forEach(b=>{
+    b.disabled=true;
+    if(b.querySelector('.choice-text').textContent===answerText) b.classList.add('reveal');
   });
 
-  recordResult(current, isCorrect);
+  const newlyMastered=recordResult(current,isCorrect);
 
-  if (isCorrect) {
+  if(isCorrect){
     btn.classList.remove('reveal'); btn.classList.add('correct');
     totalCorrect++;
-    const fb = document.getElementById('feedback');
-    fb.className = 'feedback-bar correct';
-    fb.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M13 4L6.5 11 3 7.5" stroke="#2e7d32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg> Correct!';
+    const fb=document.getElementById('feedback');
+    if(newlyMastered){
+      fb.className='feedback-bar mastered';
+      fb.innerHTML='<svg width="16" height="16" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M13 4L6.5 11 3 7.5" stroke="#1565c0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg> Card mastered! It will be skipped in future sessions.';
+      updateMasteryPanel();
+    } else {
+      const streak=cardStreak[getCardKey(current)];
+      const remaining=MASTERY_THRESHOLD-streak;
+      fb.className='feedback-bar correct';
+      fb.innerHTML=`<svg width="16" height="16" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M13 4L6.5 11 3 7.5" stroke="#2e7d32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg> Correct! ${remaining>0?`<span style="margin-left:6px;font-size:12px;opacity:0.75;">${remaining} more in a row to master</span>`:''}`;
+    }
   } else {
     btn.classList.add('wrong'); totalWrong++;
     reviewQueue.push(current);
-    const fb = document.getElementById('feedback');
-    fb.className = 'feedback-bar wrong';
-    fb.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" style="flex-shrink:0"><line x1="4" y1="4" x2="12" y2="12" stroke="#c62828" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="4" x2="4" y2="12" stroke="#c62828" stroke-width="2" stroke-linecap="round"/></svg> Correct answer: <strong style="margin-left:4px;">${answerText}</strong>`;
+    const fb=document.getElementById('feedback');
+    fb.className='feedback-bar wrong';
+    fb.innerHTML=`<svg width="16" height="16" viewBox="0 0 16 16" style="flex-shrink:0"><line x1="4" y1="4" x2="12" y2="12" stroke="#c62828" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="4" x2="4" y2="12" stroke="#c62828" stroke-width="2" stroke-linecap="round"/></svg> Correct answer: <strong style="margin-left:4px;">${answerText}</strong>`;
+    updateMasteryPanel();
   }
-  document.getElementById('next-btn').style.display = 'inline-block';
+  document.getElementById('next-btn').style.display='inline-block';
 }
 
-function nextQ() { showQuestion(); }
-function endSession() { showDone(); }
+function nextQ(){showQuestion();}
+function endSession(){showDone();}
 
 function showDone() {
   showScreen('done-screen');
-  const total = totalCorrect + totalWrong;
-  const pct = total > 0 ? Math.round((totalCorrect / total) * 100) : 0;
-  document.getElementById('s-correct').textContent = totalCorrect;
-  document.getElementById('s-wrong').textContent = totalWrong;
-  document.getElementById('s-pct').textContent = pct + '%';
-  const [icon,title,sub] =
-    pct===100 ? ['🏆','Perfect score!','You nailed every single card.'] :
-    pct>=80   ? ['🎉','Great work!',`${pct}% — almost mastered it.`] :
-    pct>=60   ? ['📚','Keep going!',`${pct}% — a few more rounds and you'll have it.`] :
-                ['💪','Keep studying!',`${pct}% — more practice will get you there.`];
-  document.getElementById('done-icon').textContent = icon;
-  document.getElementById('done-title').textContent = title;
-  document.getElementById('done-sub').textContent = sub;
+  const total=totalCorrect+totalWrong;
+  const pct=total>0?Math.round((totalCorrect/total)*100):0;
+  document.getElementById('s-correct').textContent=totalCorrect;
+  document.getElementById('s-wrong').textContent=totalWrong;
+  document.getElementById('s-pct').textContent=pct+'%';
+  const mc=masteredCount();
+  const tv=cardData.filter(c=>c.t.trim()&&c.d.trim()).length;
+  document.getElementById('done-mastery-row').textContent=`${mc} of ${tv} cards mastered overall`;
+  const [icon,title,sub]=
+    pct===100?['🏆','Perfect score!','You nailed every card.']:
+    pct>=80?['🎉','Great work!',`${pct}% — almost mastered it.`]:
+    pct>=60?['📚','Keep going!',`${pct}% — a few more rounds and you'll have it.`]:
+             ['💪','Keep studying!',`${pct}% — more practice will get you there.`];
+  document.getElementById('done-icon').textContent=icon;
+  document.getElementById('done-title').textContent=title;
+  document.getElementById('done-sub').textContent=sub;
 }
 
 function restartSame() {
-  initWeights(cards);
   buildChunks();
-  totalCorrect = 0; totalWrong = 0; sessionAnswered = 0;
-  showScreen('quiz-screen');
-  showQuestion();
+  totalCorrect=0; totalWrong=0; sessionAnswered=0;
+  showScreen('quiz-screen'); showQuestion();
 }
 
-function goSetup() { showScreen('setup-screen'); }
+function goSetup(){showScreen('setup-screen');updateMasteryPanel();}
 
-document.addEventListener('keydown', (e) => {
-  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-  const quizActive = document.getElementById('quiz-screen').classList.contains('active');
-  const flipActive = document.getElementById('flip-screen').classList.contains('active');
-  const doneActive = document.getElementById('done-screen').classList.contains('active');
-  if (quizActive) {
-    if (e.key >= '1' && e.key <= '4') {
-      const btns = document.querySelectorAll('#choices .choice-btn');
-      if (btns[+e.key-1] && !btns[+e.key-1].disabled) btns[+e.key-1].click();
-    } else if (e.key==='Enter'||e.key===' ') {
-      const nb = document.getElementById('next-btn');
-      if (nb.style.display !== 'none') nb.click();
+document.addEventListener('keydown',(e)=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+  const quizActive=document.getElementById('quiz-screen').classList.contains('active');
+  const flipActive=document.getElementById('flip-screen').classList.contains('active');
+  const doneActive=document.getElementById('done-screen').classList.contains('active');
+  if(quizActive){
+    if(e.key>='1'&&e.key<='4'){
+      const btns=document.querySelectorAll('#choices .choice-btn');
+      if(btns[+e.key-1]&&!btns[+e.key-1].disabled) btns[+e.key-1].click();
+    } else if(e.key==='Enter'||e.key===' '){
+      const nb=document.getElementById('next-btn');
+      if(nb.style.display!=='none') nb.click();
     }
-  } else if (flipActive) {
-    if (e.key===' ') { e.preventDefault(); toggleFlip(); }
-    else if (e.key==='Enter'||e.key==='ArrowRight') nextFlip();
-    else if (e.key==='ArrowLeft') prevFlip();
-  } else if (doneActive) {
-    if (e.key==='Enter') restartSame();
+  } else if(flipActive){
+    if(e.key===' '){e.preventDefault();toggleFlip();}
+    else if(e.key==='Enter'||e.key==='ArrowRight') nextFlip();
+    else if(e.key==='ArrowLeft') prevFlip();
+  } else if(doneActive){
+    if(e.key==='Enter') restartSame();
   }
 });
 
